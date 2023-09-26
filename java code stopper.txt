@@ -1,0 +1,209 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.text.DecimalFormat;
+
+public class Stopper extends JFrame {
+    private JLabel timeLabel;
+    private JLabel indicatorLabel;
+    private Timer timer;
+    private long startTime;
+    private boolean isRunning;
+    private boolean isPaused;
+    private long pauseTime;
+
+    public Stopper() {
+        setTitle("Stopper");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(470, 320);
+
+        JPanel paddingPanel = new JPanel(new BorderLayout());
+        paddingPanel.setBackground(new Color(98, 157, 209));
+
+        JLabel titleLabel = new JLabel("Pallas StopWatch", SwingConstants.LEFT);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 25));
+        titleLabel.setForeground(new Color(0, 112, 190));
+
+        paddingPanel.add(titleLabel, BorderLayout.NORTH);
+
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        contentPanel.setBackground(new Color(189, 218, 223));
+
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.add(contentPanel, BorderLayout.CENTER);
+        wrapperPanel.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+
+        wrapperPanel.setBackground(new Color(64, 64, 64));
+
+        paddingPanel.add(wrapperPanel, BorderLayout.CENTER);
+
+        JPanel outerPanel = new JPanel(new BorderLayout());
+        outerPanel.setBorder(BorderFactory.createLineBorder(new Color(52, 119, 178), 7));
+        outerPanel.add(paddingPanel, BorderLayout.CENTER);
+
+        paddingPanel.setBorder(BorderFactory.createEmptyBorder(1, 60, 20, 60));
+
+        setContentPane(outerPanel);
+
+        indicatorLabel = new JLabel();
+        indicatorLabel.setPreferredSize(new Dimension(30, 30));
+        indicatorLabel.setOpaque(true);
+        updateIndicator();
+        GridBagConstraints labelConstraints = new GridBagConstraints();
+        labelConstraints.gridx = 0;
+        labelConstraints.gridy = 0;
+        labelConstraints.insets = new Insets(10, 10, 10, 10);
+        contentPanel.add(indicatorLabel, labelConstraints);
+
+        timeLabel = new JLabel("00:00", SwingConstants.CENTER);
+        timeLabel.setFont(new Font("Arial", Font.PLAIN, 60));
+        labelConstraints.gridx = 1;
+        contentPanel.add(timeLabel, labelConstraints);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 20));
+        buttonPanel.setBackground(new Color(98, 157, 209));
+
+        JButton startButton = new JButton("Start");
+        startButton.setFocusPainted(false);
+
+        JButton stopButton = new JButton("Stop");
+        stopButton.setFocusPainted(false);
+
+        JButton resetButton = new JButton("Reset");
+        resetButton.setFocusPainted(false);
+
+        startButton.setBackground(new Color(104, 163, 174));
+        stopButton.setBackground(new Color(145, 158, 181));
+        resetButton.setBackground(new Color(157, 146, 167));
+
+        Font buttonFont = new Font("Arial", Font.BOLD, 18);
+        startButton.setFont(buttonFont);
+        stopButton.setFont(buttonFont);
+        resetButton.setFont(buttonFont);
+
+        Dimension buttonSize = new Dimension(100, 50);
+        startButton.setPreferredSize(buttonSize);
+        stopButton.setPreferredSize(buttonSize);
+        resetButton.setPreferredSize(buttonSize);
+
+        buttonPanel.add(startButton);
+        buttonPanel.add(stopButton);
+        buttonPanel.add(resetButton);
+
+        outerPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        startButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!isRunning) {
+                    if (!isPaused) {
+                        start();
+                    } else {
+                        resume();
+                    }
+                    isPaused = false;
+                    startButton.setEnabled(false);
+                    stopButton.setEnabled(true);
+                    resetButton.setEnabled(false);
+                }
+            }
+        });
+
+        stopButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (isRunning) {
+                    stop();
+                    startButton.setEnabled(true);
+                    stopButton.setEnabled(false);
+                    resetButton.setEnabled(true);
+                }
+            }
+        });
+
+        resetButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                reset();
+                startButton.setEnabled(true);
+                stopButton.setEnabled(false);
+                resetButton.setEnabled(false);
+            }
+        });
+
+        timer = new Timer(1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (isRunning) {
+                    long currentTime = System.currentTimeMillis();
+                    long elapsedTime = currentTime - startTime;
+                    updateDisplay(elapsedTime);
+                }
+            }
+        });
+
+        isRunning = false;
+        isPaused = false;
+    }
+
+    private void updateIndicator() {
+        if (isRunning) {
+            indicatorLabel.setBackground(Color.BLACK);
+        } else {
+            indicatorLabel.setBackground(Color.GRAY);
+        }
+    }
+
+    private void start() {
+        startTime = System.currentTimeMillis();
+        timer.start();
+        isRunning = true;
+        updateIndicator();
+    }
+
+    private void stop() {
+        timer.stop();
+        isRunning = false;
+        isPaused = true;
+        pauseTime = System.currentTimeMillis();
+        updateIndicator();
+    }
+
+    private void resume() {
+        long currentTime = System.currentTimeMillis();
+        startTime += currentTime - pauseTime;
+        timer.start();
+        isRunning = true;
+        isPaused = false;
+        updateIndicator();
+    }
+
+    private void reset() {
+        timer.stop();
+        isRunning = false;
+        isPaused = false;
+        timeLabel.setText("00:00");
+        updateIndicator();
+    }
+
+    private void updateDisplay(long elapsedTime) {
+        DecimalFormat df = new DecimalFormat("00");
+
+        long minutes = (elapsedTime / 60000) % 60;
+        long seconds = (elapsedTime / 1000) % 60;
+
+        String timeStr = df.format(minutes) + ":" + df.format(seconds);
+        timeLabel.setText(timeStr);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                Stopper stopper = new Stopper();
+                stopper.setVisible(true);
+            }
+        });
+    }
+}
